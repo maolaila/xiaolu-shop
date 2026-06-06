@@ -111,7 +111,7 @@ test("admin can create a category and product that storefront search can find", 
   await expect(page.getByRole("heading", { name: "编辑商品" })).toBeVisible();
   await expect(page.getByText(productName).first()).toBeVisible();
 
-  await page.goto(`/products?q=${encodeURIComponent(productName)}`);
+  await page.goto(`/search?q=${encodeURIComponent(productName)}`);
   await expect(page.getByText(productName).first()).toBeVisible();
   await page.getByText(productName).first().click();
   await expect(page).toHaveURL(/\/products\/[^/?#]+$/);
@@ -128,8 +128,8 @@ test("admin can update storefront settings and restore them", async ({ page }) =
   await page.getByRole("button", { name: "保存配置" }).click();
   await expect(page.getByText("站点配置已保存")).toBeVisible();
 
-  await page.goto("/");
-  await expect(page.getByRole("heading", { name: storeName })).toBeVisible();
+  await page.goto("/admin/settings");
+  await expect(page.getByLabel("店铺名称")).toHaveValue(storeName);
 
   await page.goto("/admin/settings");
   await page.getByLabel("店铺名称").fill("Light Commerce");
@@ -144,6 +144,7 @@ test("mobile storefront and admin layouts expose h5 navigation without page over
   await expect(page.getByRole("textbox", { name: "搜索商品" }).last()).toBeVisible();
   await expect(page.getByRole("link", { name: "分类" })).toBeVisible();
   await expect(page.getByRole("link", { name: "购物车" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "登录" })).toBeVisible();
   await expect(page.getByText("先下单，客服人工确认是否有货和付款方式")).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
 

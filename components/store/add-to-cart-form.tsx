@@ -2,6 +2,7 @@
 
 import { useActionState, useMemo, useState } from "react";
 import { Minus, Plus, ShoppingCart } from "lucide-react";
+import Link from "next/link";
 
 import { addToCartAction } from "@/app/actions/cart";
 import { emptyActionState } from "@/lib/action-state";
@@ -98,10 +99,20 @@ export function AddToCartForm({
       {state.message ? (
         <p className={state.ok ? "text-sm text-emerald-700" : "text-sm text-red-600"}>{state.message}</p>
       ) : null}
-      <Button disabled={pending || unavailable}>
-        <ShoppingCart className="h-4 w-4" />
-        {pending ? "处理中" : "加入购物车"}
-      </Button>
+      <div className="grid gap-2 sm:grid-cols-2">
+        <Button disabled={pending || unavailable}>
+          <ShoppingCart className="h-4 w-4" />
+          {pending ? "处理中" : "加入购物车"}
+        </Button>
+        {state.ok ? (
+          <Link
+            className="inline-flex h-10 items-center justify-center rounded-md border border-line bg-white px-4 text-sm font-medium text-ink transition hover:bg-slate-50"
+            href="/cart"
+          >
+            去购物车
+          </Link>
+        ) : null}
+      </div>
     </form>
   );
 }
