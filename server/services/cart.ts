@@ -14,7 +14,6 @@ export type CartItemRow = {
   optionValues: Record<string, string>;
   variantStatus: string;
   unitPrice: string;
-  stock: number;
   quantity: number;
   subtotal: string;
 };
@@ -33,7 +32,6 @@ export async function getCartItems(userId: string) {
       v.option_values as "optionValues",
       v.status as "variantStatus",
       v.price::text as "unitPrice",
-      v.stock,
       ci.quantity,
       (v.price * ci.quantity)::text as "subtotal"
     from cart_items ci
@@ -48,8 +46,8 @@ export async function addCartItem(userId: string, input: unknown) {
   const parsed = addCartItemSchema.parse(input);
   const sql = getSql();
 
-  const variants = await sql<{ productStatus: string; variantStatus: string; stock: number }[]>`
-    select p.status as "productStatus", v.status as "variantStatus", v.stock
+  const variants = await sql<{ productStatus: string; variantStatus: string }[]>`
+    select p.status as "productStatus", v.status as "variantStatus"
     from product_variants v
     join products p on p.id = v.product_id
     where v.id = ${parsed.variantId}
@@ -59,10 +57,7 @@ export async function addCartItem(userId: string, input: unknown) {
 
   const variant = variants[0];
   if (!variant || variant.productStatus !== "active" || variant.variantStatus !== "active") {
-    throw new Error("商品已下架或规格不可用");
-  }
-  if (variant.stock < parsed.quantity) {
-    throw new Error("库存不足");
+    throw new Error("商品已下架或不可用");
   }
 
   await sql`
@@ -70,7 +65,7 @@ export async function addCartItem(userId: string, input: unknown) {
     values (${userId}, ${parsed.productId}, ${parsed.variantId}, ${parsed.quantity})
     on conflict (user_id, variant_id)
     do update set
-      quantity = least(cart_items.quantity + excluded.quantity, ${Math.min(99, variant.stock)}),
+      quantity = least(cart_items.quantity + excluded.quantity, 99),
       updated_at = now()
   `;
 }
@@ -78,10 +73,9 @@ export async function addCartItem(userId: string, input: unknown) {
 export async function updateCartItem(userId: string, input: unknown) {
   const parsed = updateCartItemSchema.parse(input);
   const sql = getSql();
-  const rows = await sql<{ stock: number }[]>`
-    select v.stock
+  const rows = await sql<{ id: string }[]>`
+    select ci.id
     from cart_items ci
-    join product_variants v on v.id = ci.variant_id
     where ci.id = ${parsed.cartItemId}
       and ci.user_id = ${userId}
     limit 1
@@ -89,9 +83,6 @@ export async function updateCartItem(userId: string, input: unknown) {
 
   if (rows.length === 0) {
     throw new Error("购物车商品不存在");
-  }
-  if (parsed.quantity > rows[0].stock) {
-    throw new Error("库存不足，请调整数量");
   }
 
   await sql`

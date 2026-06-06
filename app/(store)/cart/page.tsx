@@ -15,7 +15,7 @@ export default async function CartPage() {
   const [items, settings] = await Promise.all([getCartItems(user.id), getSiteSettings()]);
   const total = items.reduce((sum, item) => sum + Number(item.subtotal), 0);
   const hasInvalid = items.some(
-    (item) => item.productStatus !== "active" || item.variantStatus !== "active" || item.quantity > item.stock
+    (item) => item.productStatus !== "active" || item.variantStatus !== "active"
   );
 
   return (
@@ -23,7 +23,7 @@ export default async function CartPage() {
       <div className="mb-6 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end">
         <div>
           <h1 className="text-2xl font-semibold">购物车</h1>
-          <p className="mt-1 text-sm text-muted">提交订单前会再次校验库存、状态和价格。</p>
+          <p className="mt-1 text-sm text-muted">提交后由客服人工确认是否有货。</p>
         </div>
         {items.length > 0 ? (
           <form action={clearCartAction}>
@@ -45,9 +45,7 @@ export default async function CartPage() {
                   ? "商品已下架"
                   : item.variantStatus !== "active"
                     ? "商品不可用"
-                    : item.quantity > item.stock
-                      ? "库存不足"
-                      : null;
+                    : null;
               const optionText = Object.entries(item.optionValues)
                 .map(([key, value]) => `${key}: ${value}`)
                 .join(" / ");
@@ -65,7 +63,7 @@ export default async function CartPage() {
                     {invalid ? <p className="mt-2 text-sm text-red-600">{invalid}</p> : null}
                   </div>
                   <div className="col-span-2 md:col-span-1">
-                    <CartQuantityForm cartItemId={item.id} quantity={item.quantity} stock={item.stock} />
+                    <CartQuantityForm cartItemId={item.id} quantity={item.quantity} />
                   </div>
                   <form action={removeCartItemAction} className="col-span-2 md:col-span-1">
                     <input type="hidden" name="cartItemId" value={item.id} />
@@ -78,15 +76,12 @@ export default async function CartPage() {
             })}
           </section>
           <aside className="h-fit rounded-md border border-line bg-white p-5">
-            <div className="flex justify-between text-sm text-muted">
-              <span>商品数量</span>
-              <span>{items.reduce((sum, item) => sum + item.quantity, 0)}</span>
-            </div>
-            <div className="mt-3 flex justify-between text-lg font-semibold">
+            <div className="flex justify-between text-lg font-semibold">
               <span>合计</span>
               <span>{formatMoney(total, settings.currency)}</span>
             </div>
-            {hasInvalid ? <p className="mt-3 text-sm text-red-600">存在不可结算商品，请先删除或调整数量。</p> : null}
+            <p className="mt-3 text-sm text-muted">最终是否有货、付款金额和发货时间以后台人工确认为准。</p>
+            {hasInvalid ? <p className="mt-3 text-sm text-red-600">存在不可结算商品，请先删除。</p> : null}
             {hasInvalid ? (
               <button
                 className="mt-5 inline-flex h-10 w-full cursor-not-allowed items-center justify-center rounded-md border border-line bg-white px-4 text-sm font-medium text-muted"

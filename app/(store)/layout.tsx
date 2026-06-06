@@ -1,14 +1,17 @@
-import { StoreFooter } from "@/components/store/footer";
+import { BottomNavClient } from "@/components/store/bottom-nav-client";
 import { StoreHeader } from "@/components/store/header";
+import { getCurrentUser } from "@/server/auth";
 
 export const dynamic = "force-dynamic";
 
-export default function StoreLayout({ children }: { children: React.ReactNode }) {
+export default async function StoreLayout({ children }: { children: React.ReactNode }) {
+  const user = await getCurrentUser();
+
   return (
     <>
       <StoreHeader />
-      <main>{children}</main>
-      <StoreFooter />
+      <main className="pb-20">{children}</main>
+      <BottomNavClient isLoggedIn={Boolean(user)} />
     </>
   );
 }

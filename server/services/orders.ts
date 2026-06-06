@@ -101,7 +101,6 @@ export async function createOrderFromCart(userId: string, input: unknown) {
         variantStatus: string;
         optionValues: Record<string, string>;
         unitPrice: string;
-        stock: number;
       }[]
     >`
       select
@@ -115,8 +114,7 @@ export async function createOrderFromCart(userId: string, input: unknown) {
         p.main_image_url as "productImageUrl",
         v.status as "variantStatus",
         v.option_values as "optionValues",
-        v.price::text as "unitPrice",
-        v.stock
+        v.price::text as "unitPrice"
       from cart_items ci
       join products p on p.id = ci.product_id
       join product_variants v on v.id = ci.variant_id
@@ -136,10 +134,7 @@ export async function createOrderFromCart(userId: string, input: unknown) {
         throw new Error(`${row.productName} 已下架，不能提交订单`);
       }
       if (row.variantStatus !== "active") {
-        throw new Error(`${row.productName} 规格不可用`);
-      }
-      if (row.stock < row.quantity) {
-        throw new Error(`${row.productName} 库存不足`);
+        throw new Error(`${row.productName} 商品不可用`);
       }
       total += Number(row.unitPrice) * row.quantity;
     }
@@ -159,17 +154,6 @@ export async function createOrderFromCart(userId: string, input: unknown) {
 
     for (const row of rows) {
       const subtotal = Number(row.unitPrice) * row.quantity;
-      const updated = await tx<{ id: string }[]>`
-        update product_variants
-        set stock = stock - ${row.quantity}, updated_at = now()
-        where id = ${row.variantId}
-          and stock >= ${row.quantity}
-        returning id
-      `;
-      if (updated.length === 0) {
-        throw new Error(`${row.productName} 库存不足`);
-      }
-
       await tx`
         insert into order_items (
           order_id, product_id, variant_id, product_name, product_slug, product_image_url,

@@ -1,102 +1,27 @@
-import { ArrowRight, Megaphone } from "lucide-react";
-import Link from "next/link";
+import { ShieldCheck } from "lucide-react";
 
-import { ButtonLink } from "@/components/ui/button";
 import { ProductCard } from "@/components/store/product-card";
-import { getHomeProducts, getVisibleCategories } from "@/server/services/catalog";
+import { getPublicProducts } from "@/server/services/catalog";
 import { getSiteSettings } from "@/server/services/settings";
 
 export default async function HomePage() {
-  const [settings, categories, products] = await Promise.all([
+  const [settings, products] = await Promise.all([
     getSiteSettings(),
-    getVisibleCategories(),
-    getHomeProducts()
+    getPublicProducts({ pageSize: 40 })
   ]);
 
   return (
-    <div>
-      <section className="bg-white">
-        <div className="mx-auto grid max-w-7xl gap-6 px-4 py-8 sm:py-12 md:grid-cols-[1.05fr_0.95fr] md:items-center">
-          <div>
-            <p className="mb-3 inline-flex max-w-full items-center gap-2 rounded-md bg-teal-50 px-3 py-2 text-sm font-medium text-brand">
-              <Megaphone className="h-4 w-4 shrink-0" />
-              {settings.announcement}
-            </p>
-            <h1 className="max-w-2xl text-3xl font-bold leading-tight tracking-normal text-ink sm:text-4xl md:text-5xl">
-              {settings.storeName}
-            </h1>
-            <p className="mt-4 max-w-2xl text-base leading-7 text-muted">
-              精选现货和预订商品，下单后由客服确认付款、采购和发货进度。
-            </p>
-            <div className="mt-6 grid gap-3 sm:flex sm:flex-wrap">
-              <ButtonLink className="w-full sm:w-auto" href="/products">
-                浏览商品
-                <ArrowRight className="h-4 w-4" />
-              </ButtonLink>
-              <ButtonLink className="w-full sm:w-auto" href="/register" variant="secondary">
-                注册账号
-              </ButtonLink>
-            </div>
-          </div>
-          <div className="aspect-[4/3] overflow-hidden rounded-md bg-slate-100">
-            <img
-              alt="商品展示"
-              className="h-full w-full object-cover"
-              src="https://images.unsplash.com/photo-1516826957135-700dedea698c?auto=format&fit=crop&w=1400&q=80"
-            />
-          </div>
-        </div>
-      </section>
+    <div className="mx-auto max-w-7xl px-2 py-2 sm:px-4 sm:py-4">
+      <div className="mb-2 flex items-center gap-2 rounded-md bg-white px-3 py-2 text-xs text-muted">
+        <ShieldCheck className="h-4 w-4 shrink-0 text-red-600" />
+        <span className="min-w-0 truncate">先下单，客服人工确认是否有货和付款方式</span>
+      </div>
 
-      <section className="border-y border-line bg-white">
-        <div className="mx-auto flex max-w-7xl items-center gap-3 overflow-x-auto px-4 py-3">
-          <span className="shrink-0 text-sm font-medium text-muted">分类</span>
-          <Link
-            className="inline-flex h-9 shrink-0 items-center rounded-md bg-wash px-3 text-sm font-medium text-ink transition hover:bg-teal-50 hover:text-brand"
-            href="/products"
-          >
-            全部商品
-          </Link>
-          {categories.map((category) => (
-            <Link
-              className="inline-flex h-9 shrink-0 items-center gap-1 rounded-md px-3 text-sm text-muted transition hover:bg-teal-50 hover:text-brand"
-              href={`/products?category=${category.slug}`}
-              key={category.id}
-            >
-              <span>{category.name}</span>
-              <span className="text-xs opacity-70">{category.productCount ?? 0}</span>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-7xl px-4 py-8">
-        <div className="mb-5 flex items-end justify-between gap-4">
-          <div>
-            <h2 className="text-xl font-semibold">推荐商品</h2>
-            <p className="mt-1 text-sm text-muted">优先展示现货和近期上新的商品。</p>
-          </div>
-          <Link className="text-sm font-medium text-brand" href="/products">
-            查看全部
-          </Link>
-        </div>
-        <div className="grid grid-cols-2 gap-2.5 sm:gap-4 md:grid-cols-3 xl:grid-cols-5">
-          {products.featured.map((product) => (
-            <ProductCard currency={settings.currency} key={product.id} product={product} />
-          ))}
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-7xl px-4 py-8">
-        <div className="mb-5">
-          <h2 className="text-xl font-semibold">最新商品</h2>
-        </div>
-        <div className="grid grid-cols-2 gap-2.5 sm:gap-4 md:grid-cols-3 xl:grid-cols-5">
-          {products.latest.map((product) => (
-            <ProductCard currency={settings.currency} key={product.id} product={product} />
-          ))}
-        </div>
-      </section>
+      <div className="grid grid-cols-2 gap-2 sm:gap-4 md:grid-cols-3 xl:grid-cols-5">
+        {products.map((product) => (
+          <ProductCard currency={settings.currency} key={product.id} product={product} />
+        ))}
+      </div>
     </div>
   );
 }

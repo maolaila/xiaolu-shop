@@ -39,7 +39,6 @@ export default async function ProductDetailPage({ params }: { params: Params }) 
     { id: "thumbnail", url: product.mainImageUrl },
     ...product.images.map((image) => ({ id: image.id, url: image.url }))
   ];
-  const totalStock = product.variants.reduce((sum, variant) => sum + variant.stock, 0);
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-6 sm:py-8">
@@ -49,19 +48,12 @@ export default async function ProductDetailPage({ params }: { params: Params }) 
         <section className="rounded-md border border-line bg-white p-4 sm:p-6">
           <p className="text-sm text-muted">{product.categoryName}</p>
           <h1 className="mt-2 text-2xl font-semibold tracking-normal sm:text-3xl">{product.name}</h1>
-          <div className="mt-4 text-2xl font-bold text-brand">
+          <div className="mt-4 text-3xl font-bold text-red-600">
             {formatMoney(product.minPrice, settings.currency)}
           </div>
           <p className="mt-3 text-sm text-muted">{product.summary}</p>
-          <div className="mt-4 flex flex-wrap gap-2">
-            {product.tags.map((tag) => (
-              <span className="rounded bg-wash px-2 py-1 text-xs text-muted" key={tag}>
-                {tag}
-              </span>
-            ))}
-          </div>
           <div className="mt-5 rounded-md bg-wash p-3 text-sm text-muted">
-            库存：{totalStock > 0 ? `${totalStock} 件` : "已售罄"}
+            下单后客服会在后台人工确认是否有货。
           </div>
           <div className="mt-6">
             <AddToCartForm productId={product.id} redirectTo={`/products/${product.slug}`} variants={product.variants} />

@@ -9,15 +9,13 @@ import { Button } from "@/components/ui/button";
 
 export function CartQuantityForm({
   cartItemId,
-  quantity,
-  stock
+  quantity
 }: {
   cartItemId: string;
   quantity: number;
-  stock: number;
 }) {
   const [state, action, pending] = useActionState(updateCartItemAction, emptyActionState);
-  const safeMax = Math.max(1, stock);
+  const safeMax = 99;
   const [currentQuantity, setCurrentQuantity] = useState(() => clampQuantity(quantity, safeMax));
 
   function updateQuantity(nextValue: number) {
@@ -61,7 +59,6 @@ export function CartQuantityForm({
           <RefreshCw className="h-4 w-4" />
         </Button>
       </div>
-      <span className="text-xs text-muted">库存 {stock} 件</span>
       {state.message ? <span className="text-xs text-red-600">{state.ok ? "" : state.message}</span> : null}
     </form>
   );

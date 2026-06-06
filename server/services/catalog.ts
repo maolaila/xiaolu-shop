@@ -181,7 +181,7 @@ export async function getPublicProducts(params: {
     left join product_variants v on v.product_id = p.id
     where p.status = 'active'
       and (${category}::text is null or c.slug = ${category})
-      and (${q}::text is null or p.name ilike '%' || ${q} || '%' or coalesce(p.summary, '') ilike '%' || ${q} || '%')
+      and (${q}::text is null or p.name ilike '%' || ${q} || '%')
     group by p.id, c.id
     having (
       ${stock} = 'all'

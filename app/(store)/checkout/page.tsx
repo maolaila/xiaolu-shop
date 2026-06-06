@@ -11,7 +11,7 @@ export default async function CheckoutPage() {
   const user = await requireUser();
   const [items, settings] = await Promise.all([getCartItems(user.id), getSiteSettings()]);
   const validItems = items.filter(
-    (item) => item.productStatus === "active" && item.variantStatus === "active" && item.quantity <= item.stock
+    (item) => item.productStatus === "active" && item.variantStatus === "active"
   );
   const total = validItems.reduce((sum, item) => sum + Number(item.subtotal), 0);
 
@@ -25,7 +25,7 @@ export default async function CheckoutPage() {
       {validItems.length === 0 ? (
         <EmptyState
           title="没有可结算商品"
-          description="购物车为空，或商品库存/状态发生变化。"
+          description="购物车为空，或商品状态发生变化。"
           actionHref="/cart"
           actionLabel="返回购物车"
         />

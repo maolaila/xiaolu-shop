@@ -20,7 +20,6 @@ function productsHref(params: Record<string, string | string[] | undefined>, upd
     q: value(params, "q") ?? "",
     category: value(params, "category") ?? "",
     sort: value(params, "sort") ?? "",
-    stock: value(params, "stock") ?? "",
     ...updates
   };
   const query = new URLSearchParams();
@@ -43,19 +42,17 @@ export default async function ProductsPage({ searchParams }: { searchParams: Sea
     getPublicProducts({
       category: value(params, "category"),
       q: value(params, "q"),
-      sort: value(params, "sort"),
-      stock: value(params, "stock")
+      sort: value(params, "sort")
     })
   ]);
   const activeCategory = categories.find((category) => category.slug === currentCategory);
-  const totalCategoryCount = categories.reduce((sum, category) => sum + (category.productCount ?? 0), 0);
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-6 sm:py-8">
       <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold">{activeCategory?.name ?? "全部商品"}</h1>
-          <p className="mt-1 text-sm text-muted">当前展示 {products.length} 件商品</p>
+          <p className="mt-1 text-sm text-muted">先下单，客服人工确认是否有货。</p>
         </div>
       </div>
 
@@ -64,7 +61,6 @@ export default async function ProductsPage({ searchParams }: { searchParams: Sea
           categories={categories}
           currentCategory={currentCategory}
           params={params}
-          totalCount={totalCategoryCount}
         />
 
         <main className="min-w-0">
@@ -74,8 +70,7 @@ export default async function ProductsPage({ searchParams }: { searchParams: Sea
             values={{
               category: currentCategory,
               q: value(params, "q") ?? "",
-              sort: value(params, "sort") ?? "newest",
-              stock: value(params, "stock") ?? "all"
+              sort: value(params, "sort") ?? "newest"
             }}
           />
 
@@ -97,26 +92,22 @@ export default async function ProductsPage({ searchParams }: { searchParams: Sea
 function CategoryRail({
   categories,
   currentCategory,
-  params,
-  totalCount
+  params
 }: {
   categories: CategoryRow[];
   currentCategory: string;
   params: Record<string, string | string[] | undefined>;
-  totalCount: number;
 }) {
   return (
     <aside className="hidden self-start rounded-md border border-line bg-white p-2 lg:sticky lg:top-24 lg:block">
       <CategoryLink
         active={!currentCategory}
-        count={totalCount}
         href={productsHref(params, { category: "" })}
         label="全部"
       />
       {categories.map((category) => (
         <CategoryLink
           active={currentCategory === category.slug}
-          count={category.productCount ?? 0}
           href={productsHref(params, { category: category.slug })}
           key={category.id}
           label={category.name}
@@ -156,8 +147,7 @@ function CategoryTabs({
             href={productsHref(params, { category: category.slug })}
             key={category.id}
           >
-            <span>{category.name}</span>
-            <span className="text-xs opacity-70">{category.productCount ?? 0}</span>
+            {category.name}
           </Link>
         ))}
       </div>
@@ -167,12 +157,10 @@ function CategoryTabs({
 
 function CategoryLink({
   active,
-  count,
   href,
   label
 }: {
   active: boolean;
-  count: number;
   href: string;
   label: string;
 }) {
@@ -185,7 +173,6 @@ function CategoryLink({
       href={href}
     >
       <span className="min-w-0 truncate">{label}</span>
-      <span className="shrink-0 text-xs opacity-70">{count}</span>
     </Link>
   );
 }

@@ -21,9 +21,8 @@ export function AddToCartForm({
   const [quantity, setQuantity] = useState(1);
   const [state, action, pending] = useActionState(addToCartAction, emptyActionState);
   const selected = useMemo(() => variants.find((variant) => variant.id === variantId), [variantId, variants]);
-  const max = selected?.stock ?? 1;
-  const soldOut = !selected || selected.stock <= 0;
-  const safeMax = Math.max(1, max);
+  const unavailable = !selected;
+  const safeMax = 99;
   const needsVariantChoice = variants.length > 1;
 
   function updateQuantity(nextValue: number) {
@@ -69,7 +68,7 @@ export function AddToCartForm({
           <button
             aria-label="减少数量"
             className="grid h-10 w-10 place-items-center border-r border-line hover:bg-wash disabled:cursor-not-allowed disabled:opacity-45"
-            disabled={soldOut || quantity <= 1}
+            disabled={unavailable || quantity <= 1}
             onClick={() => updateQuantity(quantity - 1)}
             type="button"
           >
@@ -87,7 +86,7 @@ export function AddToCartForm({
           <button
             aria-label="增加数量"
             className="grid h-10 w-10 place-items-center border-l border-line hover:bg-wash disabled:cursor-not-allowed disabled:opacity-45"
-            disabled={soldOut || quantity >= safeMax}
+            disabled={unavailable || quantity >= safeMax}
             onClick={() => updateQuantity(quantity + 1)}
             type="button"
           >
@@ -95,13 +94,13 @@ export function AddToCartForm({
           </button>
         </span>
       </label>
-      {selected ? <p className="text-xs text-muted">当前可购 {selected.stock} 件</p> : null}
+      <p className="text-xs text-muted">提交后由客服确认是否有货和付款方式。</p>
       {state.message ? (
         <p className={state.ok ? "text-sm text-emerald-700" : "text-sm text-red-600"}>{state.message}</p>
       ) : null}
-      <Button disabled={pending || soldOut}>
+      <Button disabled={pending || unavailable}>
         <ShoppingCart className="h-4 w-4" />
-        {soldOut ? "已售罄" : pending ? "处理中" : "加入购物车"}
+        {pending ? "处理中" : "加入购物车"}
       </Button>
     </form>
   );

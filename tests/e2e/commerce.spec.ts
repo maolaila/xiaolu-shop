@@ -15,9 +15,15 @@ async function loginAdmin(page: Page) {
 
 test("guest can browse products and is prompted to login for cart", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByRole("heading", { name: "Light Commerce" })).toBeVisible();
-  await page.getByRole("link", { name: "全部商品" }).click();
-  await expect(page.getByRole("heading", { name: "商品列表" })).toBeVisible();
+  await expect(page.getByRole("textbox", { name: "搜索商品" })).toBeVisible();
+  await page.getByRole("textbox", { name: "搜索商品" }).fill("便携");
+  await page.getByRole("textbox", { name: "搜索商品" }).press("Enter");
+  await expect(page.getByRole("heading", { name: "搜索结果" })).toBeVisible();
+  await expect(page.getByText("便携保温杯").first()).toBeVisible();
+  await page.goBack();
+  await expect(page.getByText("先下单，客服人工确认是否有货和付款方式")).toBeVisible();
+  await page.getByRole("link", { name: "分类" }).click();
+  await expect(page.getByRole("heading", { name: "全部商品" })).toBeVisible();
   await page.getByRole("link", { name: "便携保温杯" }).click();
   await expect(page).toHaveTitle(/便携保温杯/);
   await page.getByRole("button", { name: "加入购物车" }).click();
@@ -136,9 +142,9 @@ test("mobile storefront and admin layouts expose h5 navigation without page over
 
   await page.goto("/");
   await expect(page.getByRole("textbox", { name: "搜索商品" }).last()).toBeVisible();
-  await expect(page.getByRole("link", { name: "全部商品" }).last()).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Light Commerce" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "浏览商品" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "分类" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "购物车" })).toBeVisible();
+  await expect(page.getByText("先下单，客服人工确认是否有货和付款方式")).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
 
   await loginAdmin(page);
