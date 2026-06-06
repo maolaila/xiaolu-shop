@@ -144,6 +144,7 @@ test("mobile storefront and admin layouts expose h5 navigation without page over
   await expect(page.getByRole("textbox", { name: "搜索商品" }).last()).toBeVisible();
   await expect(page.getByRole("link", { name: "分类" })).toBeVisible();
   await expect(page.getByRole("link", { name: "购物车" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "我的订单" })).toBeVisible();
   await expect(page.getByRole("link", { name: "登录" })).toBeVisible();
   await expect(page.getByText("先下单，客服人工确认是否有货和付款方式")).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
