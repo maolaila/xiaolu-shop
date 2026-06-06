@@ -15,15 +15,17 @@ async function loginAdmin(page: Page) {
 
 test("guest can browse products and is prompted to login for cart", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByRole("textbox", { name: "搜索商品" })).toBeVisible();
-  await page.getByRole("textbox", { name: "搜索商品" }).fill("便携");
-  await page.getByRole("textbox", { name: "搜索商品" }).press("Enter");
+  const searchInput = page.getByRole("searchbox", { name: "搜索商品" });
+  await expect(searchInput).toBeVisible();
+  await searchInput.fill("便携");
+  await searchInput.press("Enter");
   await expect(page.getByRole("heading", { name: "搜索结果" })).toBeVisible();
   await expect(page.getByText("便携保温杯").first()).toBeVisible();
   await page.goBack();
   await expect(page.getByText("先下单，客服人工确认是否有货和付款方式")).toBeVisible();
-  await page.getByRole("link", { name: "分类" }).click();
-  await expect(page.getByRole("heading", { name: "全部商品" })).toBeVisible();
+  await page.getByRole("link", { name: "分类", exact: true }).click();
+  await expect(page).toHaveURL(/\/products/);
+  await expect(page.getByText("便携保温杯").first()).toBeVisible();
   await page.getByRole("link", { name: "便携保温杯" }).click();
   await expect(page).toHaveTitle(/便携保温杯/);
   await page.getByRole("button", { name: "加入购物车" }).click();
@@ -113,7 +115,7 @@ test("admin can create a category and product that storefront search can find", 
 
   await page.goto(`/search?q=${encodeURIComponent(productName)}`);
   await expect(page.getByText(productName).first()).toBeVisible();
-  await page.getByText(productName).first().click();
+  await page.locator('a[href^="/products/"]').filter({ hasText: productName }).click();
   await expect(page).toHaveURL(/\/products\/[^/?#]+$/);
   await expect(page.getByText("自动测试详情")).toBeVisible();
   await expect(page.locator("script", { hasText: "blocked" })).toHaveCount(0);
@@ -141,11 +143,11 @@ test("mobile storefront and admin layouts expose h5 navigation without page over
   await page.setViewportSize({ width: 390, height: 844 });
 
   await page.goto("/");
-  await expect(page.getByRole("textbox", { name: "搜索商品" }).last()).toBeVisible();
-  await expect(page.getByRole("link", { name: "分类" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "购物车" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "我的订单" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "登录" })).toBeVisible();
+  await expect(page.getByRole("searchbox", { name: "搜索商品" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "分类", exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: "购物车", exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: "我的订单", exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: "登录", exact: true })).toBeVisible();
   await expect(page.getByText("先下单，客服人工确认是否有货和付款方式")).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
 

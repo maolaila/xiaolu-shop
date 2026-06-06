@@ -10,8 +10,17 @@ import { getSiteSettings } from "@/server/services/settings";
 
 type Params = Promise<{ slug: string }>;
 
+function decodeSlug(slug: string) {
+  try {
+    return decodeURIComponent(slug);
+  } catch {
+    return slug;
+  }
+}
+
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
-  const { slug } = await params;
+  const { slug: rawSlug } = await params;
+  const slug = decodeSlug(rawSlug);
   const product = await getProductBySlug(slug);
   if (!product) {
     return {};
@@ -29,7 +38,8 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
 }
 
 export default async function ProductDetailPage({ params }: { params: Params }) {
-  const { slug } = await params;
+  const { slug: rawSlug } = await params;
+  const slug = decodeSlug(rawSlug);
   const [product, settings] = await Promise.all([getProductBySlug(slug), getSiteSettings()]);
   if (!product) {
     notFound();
