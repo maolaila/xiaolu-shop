@@ -15,7 +15,7 @@ export default async function EditProductPage({ params }: { params: Params }) {
     <div className="grid gap-6">
       <div>
         <h1 className="text-2xl font-semibold">编辑商品</h1>
-        <p className="mt-1 text-sm text-muted">{product.name}</p>
+        <p className="mt-1 text-sm text-muted">调整 {product.name} 的基础信息、价格数量和图片。</p>
       </div>
       <section className="rounded-md border border-line bg-white p-5">
         <ProductForm categories={categories} product={product} />

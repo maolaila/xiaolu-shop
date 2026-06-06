@@ -53,25 +53,26 @@ export default async function OrderDetailPage({ params }: { params: Params }) {
           </div>
 
           <div className="overflow-hidden rounded-md border border-line bg-white">
-            {order.items.map((item) => (
-              <div className="grid grid-cols-[72px_1fr] gap-3 border-b border-line p-4 last:border-b-0 md:grid-cols-[80px_1fr_120px] md:gap-4" key={item.id}>
-                <div className="aspect-square overflow-hidden rounded-md bg-slate-100">
-                  <img alt={item.productName} className="h-full w-full object-cover" src={item.productImageUrl} />
-                </div>
-                <div className="min-w-0">
-                  <div className="font-medium">{item.productName}</div>
-                  <div className="mt-1 text-sm text-muted">
-                    {Object.entries(item.variantSnapshot)
-                      .map(([key, value]) => `${key}: ${value}`)
-                      .join(" / ") || "默认规格"}
+            {order.items.map((item) => {
+              const optionText = Object.entries(item.variantSnapshot)
+                .map(([key, value]) => `${key}: ${value}`)
+                .join(" / ");
+              return (
+                <div className="grid grid-cols-[72px_1fr] gap-3 border-b border-line p-4 last:border-b-0 md:grid-cols-[80px_1fr_120px] md:gap-4" key={item.id}>
+                  <div className="aspect-square overflow-hidden rounded-md bg-slate-100">
+                    <img alt={item.productName} className="h-full w-full object-cover" src={item.productImageUrl} />
                   </div>
-                  <div className="mt-2 text-sm text-muted">
-                    {formatMoney(item.unitPrice, settings.currency)} × {item.quantity}
+                  <div className="min-w-0">
+                    <div className="font-medium">{item.productName}</div>
+                    {optionText ? <div className="mt-1 text-sm text-muted">{optionText}</div> : null}
+                    <div className="mt-2 text-sm text-muted">
+                      {formatMoney(item.unitPrice, settings.currency)} × {item.quantity}
+                    </div>
                   </div>
+                  <div className="col-span-2 font-semibold md:col-span-1">{formatMoney(item.subtotal, settings.currency)}</div>
                 </div>
-                <div className="col-span-2 font-semibold md:col-span-1">{formatMoney(item.subtotal, settings.currency)}</div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </section>
 

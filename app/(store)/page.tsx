@@ -48,22 +48,23 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-4 py-10">
-        <div className="mb-5 flex items-end justify-between gap-4">
-          <div>
-            <h2 className="text-xl font-semibold">分类入口</h2>
-            <p className="mt-1 text-sm text-muted">按商品类型快速浏览。</p>
-          </div>
-        </div>
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+      <section className="border-y border-line bg-white">
+        <div className="mx-auto flex max-w-7xl items-center gap-3 overflow-x-auto px-4 py-3">
+          <span className="shrink-0 text-sm font-medium text-muted">分类</span>
+          <Link
+            className="inline-flex h-9 shrink-0 items-center rounded-md bg-wash px-3 text-sm font-medium text-ink transition hover:bg-teal-50 hover:text-brand"
+            href="/products"
+          >
+            全部商品
+          </Link>
           {categories.map((category) => (
             <Link
-              className="rounded-md border border-line bg-white p-4 transition hover:border-brand hover:shadow-soft"
+              className="inline-flex h-9 shrink-0 items-center gap-1 rounded-md px-3 text-sm text-muted transition hover:bg-teal-50 hover:text-brand"
               href={`/products?category=${category.slug}`}
               key={category.id}
             >
-              <div className="font-semibold">{category.name}</div>
-              <div className="mt-1 text-sm text-muted">{category.productCount ?? 0} 个上架商品</div>
+              <span>{category.name}</span>
+              <span className="text-xs opacity-70">{category.productCount ?? 0}</span>
             </Link>
           ))}
         </div>

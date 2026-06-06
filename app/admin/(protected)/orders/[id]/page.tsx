@@ -53,19 +53,20 @@ export default async function AdminOrderDetailPage({ params }: { params: Params 
         <div className="grid gap-6">
           <div className="overflow-hidden rounded-md border border-line bg-white">
             <div className="border-b border-line px-4 py-3 font-semibold">商品快照</div>
-            {order.items.map((item) => (
-              <div className="grid grid-cols-[64px_1fr] gap-3 border-b border-line p-4 last:border-b-0 md:grid-cols-[72px_1fr_120px] md:gap-4" key={item.id}>
-                <img alt={item.productName} className="h-16 w-16 rounded-md object-cover" src={item.productImageUrl} />
-                <div className="min-w-0">
-                  <div className="font-medium">{item.productName}</div>
-                  <div className="mt-1 text-sm text-muted">
-                    {Object.entries(item.variantSnapshot).map(([key, value]) => `${key}: ${value}`).join(" / ") || "默认规格"}
+            {order.items.map((item) => {
+              const optionText = Object.entries(item.variantSnapshot).map(([key, value]) => `${key}: ${value}`).join(" / ");
+              return (
+                <div className="grid grid-cols-[64px_1fr] gap-3 border-b border-line p-4 last:border-b-0 md:grid-cols-[72px_1fr_120px] md:gap-4" key={item.id}>
+                  <img alt={item.productName} className="h-16 w-16 rounded-md object-cover" src={item.productImageUrl} />
+                  <div className="min-w-0">
+                    <div className="font-medium">{item.productName}</div>
+                    {optionText ? <div className="mt-1 text-sm text-muted">{optionText}</div> : null}
+                    <div className="mt-2 text-sm text-muted">{formatMoney(item.unitPrice, settings.currency)} × {item.quantity}</div>
                   </div>
-                  <div className="mt-2 text-sm text-muted">{formatMoney(item.unitPrice, settings.currency)} × {item.quantity}</div>
+                  <div className="col-span-2 font-semibold md:col-span-1">{formatMoney(item.subtotal, settings.currency)}</div>
                 </div>
-                <div className="col-span-2 font-semibold md:col-span-1">{formatMoney(item.subtotal, settings.currency)}</div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           <div className="rounded-md border border-line bg-white p-4">

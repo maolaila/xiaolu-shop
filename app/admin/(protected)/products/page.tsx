@@ -32,7 +32,7 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
       <div className="flex items-end justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold">商品管理</h1>
-          <p className="mt-1 text-sm text-muted">管理商品上下架、库存、规格和图片。</p>
+          <p className="mt-1 text-sm text-muted">管理商品上下架、价格、数量和图片。</p>
         </div>
         <ButtonLink href="/admin/products/new">
           <Plus className="h-4 w-4" />

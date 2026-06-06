@@ -24,6 +24,7 @@ export function AddToCartForm({
   const max = selected?.stock ?? 1;
   const soldOut = !selected || selected.stock <= 0;
   const safeMax = Math.max(1, max);
+  const needsVariantChoice = variants.length > 1;
 
   function updateQuantity(nextValue: number) {
     setQuantity(clampQuantity(nextValue, safeMax));
@@ -34,32 +35,34 @@ export function AddToCartForm({
       <input type="hidden" name="productId" value={productId} />
       <input type="hidden" name="variantId" value={variantId} />
       <input type="hidden" name="redirect" value={redirectTo} />
-      <div className="grid gap-2">
-        <span className="text-sm font-medium">规格</span>
-        <div className="flex flex-wrap gap-2">
-          {variants.map((variant) => (
-            <button
-              className={
-                variant.id === variantId
-                  ? "rounded-md border border-brand bg-teal-50 px-3 py-2 text-sm text-brand"
-                  : "rounded-md border border-line bg-white px-3 py-2 text-sm hover:border-brand"
-              }
-              key={variant.id}
-              onClick={() => {
-                setVariantId(variant.id);
-                setQuantity(1);
-              }}
-              type="button"
-            >
-              {Object.keys(variant.optionValues).length > 0
-                ? Object.entries(variant.optionValues)
-                    .map(([key, value]) => `${key}: ${value}`)
-                    .join(" / ")
-                : "默认规格"}
-            </button>
-          ))}
+      {needsVariantChoice ? (
+        <div className="grid gap-2">
+          <span className="text-sm font-medium">选项</span>
+          <div className="flex flex-wrap gap-2">
+            {variants.map((variant) => (
+              <button
+                className={
+                  variant.id === variantId
+                    ? "rounded-md border border-brand bg-teal-50 px-3 py-2 text-sm text-brand"
+                    : "rounded-md border border-line bg-white px-3 py-2 text-sm hover:border-brand"
+                }
+                key={variant.id}
+                onClick={() => {
+                  setVariantId(variant.id);
+                  setQuantity(1);
+                }}
+                type="button"
+              >
+                {Object.keys(variant.optionValues).length > 0
+                  ? Object.entries(variant.optionValues)
+                      .map(([key, value]) => `${key}: ${value}`)
+                      .join(" / ")
+                  : "默认"}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
+      ) : null}
       <label className="grid gap-2 text-sm font-medium">
         数量
         <span className="inline-flex w-fit overflow-hidden rounded-md border border-line bg-white">

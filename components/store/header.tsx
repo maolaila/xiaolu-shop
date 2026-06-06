@@ -5,35 +5,22 @@ import { logoutAction } from "@/app/actions/auth";
 import { Button } from "@/components/ui/button";
 import { getCurrentUser } from "@/server/auth";
 import { getCartItems } from "@/server/services/cart";
-import { getVisibleCategories } from "@/server/services/catalog";
 import { getSiteSettings } from "@/server/services/settings";
 
 export async function StoreHeader() {
-  const [user, categories, settings] = await Promise.all([getCurrentUser(), getVisibleCategories(), getSiteSettings()]);
+  const [user, settings] = await Promise.all([getCurrentUser(), getSiteSettings()]);
   const cartCount = user ? (await getCartItems(user.id)).reduce((sum, item) => sum + item.quantity, 0) : 0;
 
   return (
     <header className="sticky top-0 z-30 border-b border-line bg-white/95 backdrop-blur">
-      <div className="mx-auto flex max-w-7xl items-center gap-2 px-3 py-3 sm:gap-4 sm:px-4">
+      <div className="mx-auto flex max-w-7xl items-center gap-2 px-3 py-2.5 sm:gap-4 sm:px-4">
         <Link href="/" className="min-w-0 flex-1 text-base font-bold tracking-normal text-ink sm:text-lg md:flex-none">
           {settings.storeName}
         </Link>
-        <nav className="hidden min-w-0 items-center gap-1 md:flex">
-          <Link className="shrink-0 rounded-md px-3 py-2 text-sm text-muted hover:bg-wash hover:text-ink" href="/products">
-            全部商品
-          </Link>
-          {categories.slice(0, 4).map((category) => (
-            <Link
-              className="max-w-24 truncate rounded-md px-3 py-2 text-sm text-muted hover:bg-wash hover:text-ink"
-              href={`/products?category=${category.slug}`}
-              key={category.id}
-              title={category.name}
-            >
-              {category.name}
-            </Link>
-          ))}
-        </nav>
-        <form action="/products" className="ml-auto hidden w-full max-w-xs items-center gap-2 rounded-md border border-line bg-wash px-3 md:flex">
+        <Link className="hidden shrink-0 rounded-md px-3 py-2 text-sm text-muted hover:bg-wash hover:text-ink md:inline-flex" href="/products">
+          全部商品
+        </Link>
+        <form action="/products" className="ml-auto hidden w-full max-w-sm items-center gap-2 rounded-md border border-line bg-wash px-3 sm:flex">
           <Search className="h-4 w-4 text-muted" aria-hidden />
           <input
             name="q"
@@ -68,7 +55,7 @@ export async function StoreHeader() {
           </Link>
         )}
       </div>
-      <div className="border-t border-line px-3 py-2 md:hidden">
+      <div className="border-t border-line px-3 py-2 sm:hidden">
         <form action="/products" className="flex h-10 items-center gap-2 rounded-md border border-line bg-wash px-3">
           <Search className="h-4 w-4 shrink-0 text-muted" aria-hidden />
           <input
@@ -79,20 +66,6 @@ export async function StoreHeader() {
             maxLength={50}
           />
         </form>
-        <nav className="mt-2 flex gap-2 overflow-x-auto pb-1">
-          <Link className="shrink-0 rounded-md bg-wash px-3 py-2 text-sm text-ink" href="/products">
-            全部商品
-          </Link>
-          {categories.slice(0, 8).map((category) => (
-            <Link
-              className="shrink-0 rounded-md px-3 py-2 text-sm text-muted hover:bg-wash hover:text-ink"
-              href={`/products?category=${category.slug}`}
-              key={category.id}
-            >
-              {category.name}
-            </Link>
-          ))}
-        </nav>
       </div>
     </header>
   );

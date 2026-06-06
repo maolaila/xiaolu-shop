@@ -12,7 +12,7 @@ export default async function AdminDashboardPage() {
     ["待确认订单", stats.pendingOrders],
     ["待处理异常", stats.exceptionOrders],
     ["上架商品", stats.activeProducts],
-    ["售罄规格", stats.soldOutVariants],
+    ["售罄商品", stats.soldOutVariants],
     ["顾客总数", stats.customers]
   ];
 

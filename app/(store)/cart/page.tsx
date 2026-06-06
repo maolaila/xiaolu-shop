@@ -44,10 +44,13 @@ export default async function CartPage() {
                 item.productStatus !== "active"
                   ? "商品已下架"
                   : item.variantStatus !== "active"
-                    ? "规格不可用"
+                    ? "商品不可用"
                     : item.quantity > item.stock
                       ? "库存不足"
                       : null;
+              const optionText = Object.entries(item.optionValues)
+                .map(([key, value]) => `${key}: ${value}`)
+                .join(" / ");
               return (
                 <div className="grid grid-cols-[84px_1fr] gap-3 border-b border-line p-4 last:border-b-0 md:grid-cols-[96px_1fr_180px_80px] md:gap-4" key={item.id}>
                   <Link className="aspect-square overflow-hidden rounded-md bg-slate-100" href={`/products/${item.productSlug}`}>
@@ -57,13 +60,7 @@ export default async function CartPage() {
                     <Link className="font-semibold hover:text-brand" href={`/products/${item.productSlug}`}>
                       {item.productName}
                     </Link>
-                    <p className="mt-1 text-sm text-muted">
-                      {Object.keys(item.optionValues).length > 0
-                        ? Object.entries(item.optionValues)
-                            .map(([key, value]) => `${key}: ${value}`)
-                            .join(" / ")
-                        : "默认规格"}
-                    </p>
+                    {optionText ? <p className="mt-1 text-sm text-muted">{optionText}</p> : null}
                     <p className="mt-2 text-sm font-medium text-brand">{formatMoney(item.unitPrice, settings.currency)}</p>
                     {invalid ? <p className="mt-2 text-sm text-red-600">{invalid}</p> : null}
                   </div>
