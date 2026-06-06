@@ -28,14 +28,20 @@ export function ProductCard({ product, currency }: { product: ProductCardType; c
         </div>
         <div className="grid content-start gap-1.5 p-2.5">
           <h3 className="line-clamp-2 min-h-10 text-[13px] font-medium leading-5 text-ink sm:text-sm">{product.name}</h3>
-          <div className="min-w-0 text-lg font-bold leading-none text-red-600">
-            {formatPriceRange(product.minPrice, product.maxPrice, currency)}
+          <div className="min-w-0 leading-none text-red-600">
+            <span className="text-xs font-semibold">¥</span>
+            <span className="text-xl font-bold">{stripCurrency(formatPriceRange(product.minPrice, product.maxPrice, currency))}</span>
           </div>
-          <div className="flex min-h-5 min-w-0 flex-wrap items-center gap-1 text-xs">
-            <span className="rounded bg-red-50 px-1.5 py-0.5 text-red-600">人工确认</span>
+          <div className="flex min-h-5 min-w-0 flex-wrap items-center gap-1 text-[11px]">
+            <span className="rounded bg-red-50 px-1.5 py-0.5 text-red-600">先下单</span>
+            <span className="rounded bg-wash px-1.5 py-0.5 text-muted">人工确认</span>
           </div>
         </div>
       </Link>
     </article>
   );
+}
+
+function stripCurrency(value: string) {
+  return value.replace(/CN¥\s?|¥\s?/g, "");
 }

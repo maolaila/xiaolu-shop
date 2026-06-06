@@ -20,6 +20,7 @@ export function StoreHeaderClient({ categories }: { categories: HeaderCategory[]
   const searchParams = useSearchParams();
   const currentCategory = searchParams.get("category") ?? "";
   const searchQuery = pathname === "/search" ? searchParams.get("q") ?? "" : "";
+  const showBackButton = pathname !== "/";
 
   function submitSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -31,7 +32,7 @@ export function StoreHeaderClient({ categories }: { categories: HeaderCategory[]
   return (
     <header className="sticky top-0 z-30 border-b border-line bg-white/95 backdrop-blur">
       <div className="mx-auto flex max-w-7xl items-center gap-2 px-3 py-2">
-        <BackButton />
+        {showBackButton ? <BackButton /> : null}
         <form
           action="/search"
           className="flex h-10 min-w-0 flex-1 items-center gap-2 rounded-full bg-wash px-3"
@@ -61,6 +62,15 @@ export function StoreHeaderClient({ categories }: { categories: HeaderCategory[]
           href="/"
         >
           推荐
+        </Link>
+        <Link
+          className={cn(
+            "shrink-0 border-b-2 pb-1",
+            pathname === "/products" && !currentCategory ? "border-red-600 text-red-600" : "border-transparent text-ink"
+          )}
+          href="/products"
+        >
+          全部
         </Link>
         {categories.map((category) => {
           const active = pathname.startsWith("/products") && currentCategory === category.slug;
