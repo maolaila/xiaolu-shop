@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useMemo, useState } from "react";
+import { useActionState, useMemo, useState, type DragEvent } from "react";
 import { ImagePlus, Save, Trash2, Upload } from "lucide-react";
 
 import { createProductAction, updateProductAction } from "@/app/admin/actions";
@@ -44,6 +44,7 @@ const imageActionClass =
   "inline-flex h-8 items-center justify-center gap-1 rounded-md border border-line bg-white px-2 text-xs font-medium text-ink transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-45";
 const imageDangerActionClass =
   "inline-flex h-8 items-center justify-center gap-1 rounded-md border border-red-200 bg-red-50 px-2 text-xs font-medium text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-45";
+const supportedImageTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
 
 export function ProductForm({
   categories,
@@ -68,8 +69,11 @@ export function ProductForm({
   const [detailUploadError, setDetailUploadError] = useState<string | null>(null);
   const [thumbnailUploadInfo, setThumbnailUploadInfo] = useState<string | null>(null);
   const [detailUploadInfo, setDetailUploadInfo] = useState<string | null>(null);
+  const [thumbnailDragActive, setThumbnailDragActive] = useState(false);
+  const [detailDragActive, setDetailDragActive] = useState(false);
   const [uploadedThumbs, setUploadedThumbs] = useState<Record<string, string>>({});
   const detailImagesValue = useMemo(() => detailImages.join("\n"), [detailImages]);
+  const uploadDisabled = thumbnailUploading || detailUploading;
   const variantsJson = useMemo(
     () =>
       JSON.stringify([
@@ -101,7 +105,7 @@ export function ProductForm({
     return body;
   }
 
-  async function uploadThumbnail(file: File | null) {
+  async function uploadThumbnail(file: File | null, note?: string) {
     if (!file) {
       return;
     }
@@ -111,11 +115,11 @@ export function ProductForm({
     try {
       const body = await uploadOne(file, "thumbnail");
       setMainImageUrl(body.thumbUrl ?? body.detailUrl ?? body.url ?? "");
-      setThumbnailUploadInfo(
+      const successMessage =
         body.contentType === "image/webp"
           ? `缩略图已生成 WebP${body.thumbBytes ? `：${formatBytes(body.thumbBytes)}` : ""}`
-          : "上传成功"
-      );
+          : "上传成功";
+      setThumbnailUploadInfo(note ? `${successMessage}。${note}` : successMessage);
     } catch (error) {
       setThumbnailUploadError(error instanceof Error ? error.message : "上传失败");
     } finally {
@@ -123,7 +127,7 @@ export function ProductForm({
     }
   }
 
-  async function uploadDetailImages(files: FileList | null) {
+  async function uploadDetailImages(files: FileList | File[] | null) {
     const selectedFiles = Array.from(files ?? []);
     if (selectedFiles.length === 0) {
       return;
@@ -182,6 +186,47 @@ export function ProductForm({
 
   function removeDetailImage(index: number) {
     setDetailImages((current) => current.filter((_, currentIndex) => currentIndex !== index));
+  }
+
+  function handleThumbnailDrop(event: DragEvent<HTMLDivElement>) {
+    stopDragEvent(event);
+    setThumbnailDragActive(false);
+    if (uploadDisabled) {
+      return;
+    }
+
+    const files = getImageFiles(event.dataTransfer.files);
+    if (files.length === 0) {
+      setThumbnailUploadError("请拖入 jpg、png 或 webp 图片");
+      setThumbnailUploadInfo(null);
+      return;
+    }
+
+    void uploadThumbnail(files[0], files.length > 1 ? "缩略图只能上传 1 张，已使用第一张图片" : undefined);
+  }
+
+  function handleDetailDrop(event: DragEvent<HTMLDivElement>) {
+    stopDragEvent(event);
+    setDetailDragActive(false);
+    if (uploadDisabled) {
+      return;
+    }
+
+    const files = getImageFiles(event.dataTransfer.files);
+    if (files.length === 0) {
+      setDetailUploadError("请拖入 jpg、png 或 webp 图片");
+      setDetailUploadInfo(null);
+      return;
+    }
+
+    void uploadDetailImages(files);
+  }
+
+  function handleDragOver(event: DragEvent<HTMLDivElement>) {
+    stopDragEvent(event);
+    if (!uploadDisabled) {
+      event.dataTransfer.dropEffect = "copy";
+    }
   }
 
   return (
@@ -263,7 +308,7 @@ export function ProductForm({
             <input
               accept="image/png,image/jpeg,image/webp"
               className="sr-only"
-              disabled={thumbnailUploading || detailUploading}
+              disabled={uploadDisabled}
               onChange={(event) => {
                 void uploadThumbnail(event.target.files?.[0] ?? null);
                 event.target.value = "";
@@ -274,23 +319,51 @@ export function ProductForm({
         </div>
         {thumbnailUploadError ? <span className="text-xs font-normal text-red-600">{thumbnailUploadError}</span> : null}
         {thumbnailUploadInfo ? <span className="text-xs font-normal text-emerald-700">{thumbnailUploadInfo}</span> : null}
-        {mainImageUrl ? (
-          <div className="grid w-40 gap-2">
-            <div className="overflow-hidden rounded-md border border-line bg-white">
-              <div className="aspect-square bg-slate-100">
-                <img alt="商品缩略图" className="h-full w-full object-cover" src={mainImageUrl} />
+        <div
+          aria-disabled={uploadDisabled}
+          className={imageDropZoneClass(thumbnailDragActive, uploadDisabled)}
+          data-testid="thumbnail-dropzone"
+          onDragEnter={(event) => {
+            stopDragEvent(event);
+            if (!uploadDisabled) {
+              setThumbnailDragActive(true);
+            }
+          }}
+          onDragLeave={(event) => {
+            stopDragEvent(event);
+            setThumbnailDragActive(false);
+          }}
+          onDragOver={handleDragOver}
+          onDrop={handleThumbnailDrop}
+        >
+          {mainImageUrl ? (
+            <div className="grid gap-3 sm:grid-cols-[160px_minmax(0,1fr)] sm:items-center">
+              <div className="overflow-hidden rounded-md border border-line bg-white">
+                <div className="aspect-square bg-slate-100">
+                  <img alt="商品缩略图" className="h-full w-full object-cover" src={mainImageUrl} />
+                </div>
+              </div>
+              <div className="grid gap-3">
+                <div>
+                  <p className="text-sm font-medium text-ink">拖拽图片到这里可替换缩略图</p>
+                  <p className="mt-1 text-xs text-muted">缩略图只保留 1 张，拖入多张时使用第一张。</p>
+                </div>
+                <button className={`${imageDangerActionClass} w-fit`} onClick={() => setMainImageUrl("")} type="button">
+                  <Trash2 className="h-3.5 w-3.5" />
+                  删除
+                </button>
               </div>
             </div>
-            <button className={imageDangerActionClass} onClick={() => setMainImageUrl("")} type="button">
-              <Trash2 className="h-3.5 w-3.5" />
-              删除
-            </button>
-          </div>
-        ) : (
-          <div className="grid h-28 place-items-center rounded-md border border-dashed border-line bg-white text-sm text-muted">
-            未上传缩略图
-          </div>
-        )}
+          ) : (
+            <div className="grid min-h-28 place-items-center text-center">
+              <div>
+                <Upload className="mx-auto h-7 w-7 text-muted" />
+                <p className="mt-2 text-sm font-medium text-ink">拖拽 1 张图片到这里</p>
+                <p className="mt-1 text-xs text-muted">也可以点击右上角上传缩略图</p>
+              </div>
+            </div>
+          )}
+        </div>
       </section>
 
       <section className="grid gap-3">
@@ -302,7 +375,7 @@ export function ProductForm({
             <input
               accept="image/png,image/jpeg,image/webp"
               className="sr-only"
-              disabled={thumbnailUploading || detailUploading}
+              disabled={uploadDisabled}
               multiple
               onChange={(event) => {
                 void uploadDetailImages(event.target.files);
@@ -314,52 +387,77 @@ export function ProductForm({
         </div>
         {detailUploadError ? <span className="text-xs font-normal text-red-600">{detailUploadError}</span> : null}
         {detailUploadInfo ? <span className="text-xs font-normal text-emerald-700">{detailUploadInfo}</span> : null}
-        {detailImages.length > 0 ? (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-            {detailImages.map((url, index) => {
-              const previewUrl = uploadedThumbs[url] ?? toGeneratedThumbnailUrl(url) ?? url;
-              return (
-                <figure className="overflow-hidden rounded-md border border-line bg-white" key={`${url}-${index}`}>
-                  <div className="aspect-square bg-slate-100">
-                    <img alt={`详情图 ${index + 1}`} className="h-full w-full object-cover" src={previewUrl} />
-                  </div>
-                  <figcaption className="grid gap-2 p-2 text-xs text-muted">
-                    <span className="font-medium text-ink">详情图 {index + 1}</span>
-                    <div className="grid grid-cols-2 gap-1">
-                      <label className={`${imageActionClass} ${detailUploading ? "cursor-not-allowed opacity-45" : "cursor-pointer"}`}>
-                        <Upload className="h-3.5 w-3.5" />
-                        更换
-                        <input
-                          accept="image/png,image/jpeg,image/webp"
-                          className="sr-only"
-                          disabled={thumbnailUploading || detailUploading}
-                          onChange={(event) => {
-                            void replaceDetailImage(index, event.target.files?.[0] ?? null);
-                            event.target.value = "";
-                          }}
-                          type="file"
-                        />
-                      </label>
-                      <button
-                        className={imageDangerActionClass}
-                        disabled={detailUploading}
-                        onClick={() => removeDetailImage(index)}
-                        type="button"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                        删除
-                      </button>
-                    </div>
-                  </figcaption>
-                </figure>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="grid h-28 place-items-center rounded-md border border-dashed border-line bg-white text-sm text-muted">
-            未上传详情图
-          </div>
-        )}
+        <div
+          aria-disabled={uploadDisabled}
+          className={imageDropZoneClass(detailDragActive, uploadDisabled)}
+          data-testid="detail-dropzone"
+          onDragEnter={(event) => {
+            stopDragEvent(event);
+            if (!uploadDisabled) {
+              setDetailDragActive(true);
+            }
+          }}
+          onDragLeave={(event) => {
+            stopDragEvent(event);
+            setDetailDragActive(false);
+          }}
+          onDragOver={handleDragOver}
+          onDrop={handleDetailDrop}
+        >
+          {detailImages.length > 0 ? (
+            <div className="grid gap-3">
+              <p className="text-xs text-muted">拖拽图片到这里可继续追加详情图</p>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+                {detailImages.map((url, index) => {
+                  const previewUrl = uploadedThumbs[url] ?? toGeneratedThumbnailUrl(url) ?? url;
+                  return (
+                    <figure className="overflow-hidden rounded-md border border-line bg-white" key={`${url}-${index}`}>
+                      <div className="aspect-square bg-slate-100">
+                        <img alt={`详情图 ${index + 1}`} className="h-full w-full object-cover" src={previewUrl} />
+                      </div>
+                      <figcaption className="grid gap-2 p-2 text-xs text-muted">
+                        <span className="font-medium text-ink">详情图 {index + 1}</span>
+                        <div className="grid grid-cols-2 gap-1">
+                          <label className={`${imageActionClass} ${detailUploading ? "cursor-not-allowed opacity-45" : "cursor-pointer"}`}>
+                            <Upload className="h-3.5 w-3.5" />
+                            更换
+                            <input
+                              accept="image/png,image/jpeg,image/webp"
+                              className="sr-only"
+                              disabled={uploadDisabled}
+                              onChange={(event) => {
+                                void replaceDetailImage(index, event.target.files?.[0] ?? null);
+                                event.target.value = "";
+                              }}
+                              type="file"
+                            />
+                          </label>
+                          <button
+                            className={imageDangerActionClass}
+                            disabled={detailUploading}
+                            onClick={() => removeDetailImage(index)}
+                            type="button"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                            删除
+                          </button>
+                        </div>
+                      </figcaption>
+                    </figure>
+                  );
+                })}
+              </div>
+            </div>
+          ) : (
+            <div className="grid min-h-28 place-items-center text-center">
+              <div>
+                <ImagePlus className="mx-auto h-7 w-7 text-muted" />
+                <p className="mt-2 text-sm font-medium text-ink">拖拽多张图片到这里</p>
+                <p className="mt-1 text-xs text-muted">也可以点击右上角批量添加详情图</p>
+              </div>
+            </div>
+          )}
+        </div>
         {detailImages.length > 0 ? <div className="text-xs text-muted">详情图片数量：{detailImages.length}</div> : null}
       </section>
 
@@ -378,6 +476,23 @@ export function ProductForm({
       </div>
     </form>
   );
+}
+
+function imageDropZoneClass(active: boolean, disabled: boolean) {
+  return [
+    "rounded-md border border-dashed p-4 transition",
+    active ? "border-brand bg-teal-50" : "border-line bg-white",
+    disabled ? "opacity-60" : "hover:border-brand/60"
+  ].join(" ");
+}
+
+function stopDragEvent(event: DragEvent<HTMLElement>) {
+  event.preventDefault();
+  event.stopPropagation();
+}
+
+function getImageFiles(files: FileList) {
+  return Array.from(files).filter((file) => supportedImageTypes.has(file.type));
 }
 
 function appendDetailImageUrls(images: string[], urls: string[]) {

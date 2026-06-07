@@ -1,5 +1,3 @@
-import fs from "node:fs/promises";
-
 import { expect, test, type Page } from "@playwright/test";
 
 const pngFixtureBase64 =
@@ -11,6 +9,23 @@ async function loginAdmin(page: Page) {
   await page.getByLabel("密码").fill("admin123456");
   await page.getByRole("button", { name: "登录" }).click();
   await expect(page.getByRole("heading", { name: "数据概览" })).toBeVisible();
+}
+
+async function dropFixtureImages(page: Page, selector: string, fileNames: string[]) {
+  const bytes = Array.from(Buffer.from(pngFixtureBase64, "base64"));
+  const dataTransfer = await page.evaluateHandle(
+    ({ bytes: imageBytes, fileNames: names }) => {
+      const transfer = new DataTransfer();
+      for (const name of names) {
+        transfer.items.add(new File([new Uint8Array(imageBytes)], name, { type: "image/png" }));
+      }
+      return transfer;
+    },
+    { bytes, fileNames }
+  );
+
+  await page.locator(selector).dispatchEvent("drop", { dataTransfer });
+  await dataTransfer.dispose();
 }
 
 test("guest can browse products and is prompted to login for cart", async ({ page }) => {
@@ -114,9 +129,6 @@ test("admin can manage income ledger records", async ({ page }) => {
 
 test("admin can create a category and product that storefront search can find", async ({ page }) => {
   const suffix = Date.now();
-  const thumbnailFile = test.info().outputPath(`product-thumb-${suffix}.png`);
-  const detailFile1 = test.info().outputPath(`product-detail-1-${suffix}.png`);
-  const detailFile2 = test.info().outputPath(`product-detail-2-${suffix}.png`);
   const categoryName = `自动测试分类 ${suffix}`;
   const productName = `自动测试商品 ${suffix}`;
 
@@ -131,15 +143,18 @@ test("admin can create a category and product that storefront search can find", 
   await expect(page.locator('input[type="file"]').nth(0)).toBeEnabled();
   await expect(page.locator('input[type="file"]').nth(1)).toBeEnabled();
   await page.waitForTimeout(300);
-  await fs.writeFile(thumbnailFile, Buffer.from(pngFixtureBase64, "base64"));
-  await fs.writeFile(detailFile1, Buffer.from(pngFixtureBase64, "base64"));
-  await fs.writeFile(detailFile2, Buffer.from(pngFixtureBase64, "base64"));
-  await page.locator('input[type="file"]').nth(0).setInputFiles(thumbnailFile);
+  await dropFixtureImages(page, '[data-testid="thumbnail-dropzone"]', [
+    `product-thumb-${suffix}.png`,
+    `ignored-extra-thumb-${suffix}.png`
+  ]);
   await expect(page.getByText(/缩略图已生成 WebP/)).toBeVisible();
   await expect(page.locator('img[alt="商品缩略图"][src$="-thumb.webp"]').first()).toBeVisible();
   await expect(page.locator('input[name="mainImageUrl"]')).toHaveValue(/-thumb\.webp$/);
   await expect(page.locator('input[name="images"]')).toHaveValue("");
-  await page.locator('input[type="file"]').nth(1).setInputFiles([detailFile1, detailFile2]);
+  await dropFixtureImages(page, '[data-testid="detail-dropzone"]', [
+    `product-detail-1-${suffix}.png`,
+    `product-detail-2-${suffix}.png`
+  ]);
   await expect(page.getByText(/已上传 2 张详情图并转成 WebP/)).toBeVisible();
   await expect(page.locator('input[name="images"]')).toHaveValue(/\.webp\r?\n.*\.webp$/);
   await expect(page.getByText("详情图 1")).toBeVisible();
