@@ -12,8 +12,44 @@ async function loginAdmin(page: Page) {
 }
 
 async function dropFixtureImages(page: Page, selector: string, fileNames: string[]) {
+  const dataTransfer = await createFixtureDataTransfer(page, fileNames);
+  await page.locator(selector).dispatchEvent("drop", { dataTransfer });
+  await dataTransfer.dispose();
+}
+
+async function pasteFixtureImage(page: Page, selector: string) {
+  await page.context().grantPermissions(["clipboard-read", "clipboard-write"], {
+    origin: new URL(page.url()).origin
+  });
+  await page.evaluate(async () => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 2;
+    canvas.height = 2;
+    const context = canvas.getContext("2d");
+    if (!context) {
+      throw new Error("Canvas is unavailable");
+    }
+    context.fillStyle = "#d32f2f";
+    context.fillRect(0, 0, 2, 2);
+    const blob = await new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob((value) => {
+        if (value) {
+          resolve(value);
+        } else {
+          reject(new Error("Failed to create clipboard image"));
+        }
+      }, "image/png");
+    });
+    await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+  });
+  await page.locator(selector).click();
+  await page.locator(`${selector} [data-paste-receiver]`).focus();
+  await page.keyboard.press("Control+V");
+}
+
+async function createFixtureDataTransfer(page: Page, fileNames: string[]) {
   const bytes = Array.from(Buffer.from(pngFixtureBase64, "base64"));
-  const dataTransfer = await page.evaluateHandle(
+  return page.evaluateHandle(
     ({ bytes: imageBytes, fileNames: names }) => {
       const transfer = new DataTransfer();
       for (const name of names) {
@@ -23,9 +59,6 @@ async function dropFixtureImages(page: Page, selector: string, fileNames: string
     },
     { bytes, fileNames }
   );
-
-  await page.locator(selector).dispatchEvent("drop", { dataTransfer });
-  await dataTransfer.dispose();
 }
 
 test("guest can browse products and is prompted to login for cart", async ({ page }) => {
@@ -143,10 +176,7 @@ test("admin can create a category and product that storefront search can find", 
   await expect(page.locator('input[type="file"]').nth(0)).toBeEnabled();
   await expect(page.locator('input[type="file"]').nth(1)).toBeEnabled();
   await page.waitForTimeout(300);
-  await dropFixtureImages(page, '[data-testid="thumbnail-dropzone"]', [
-    `product-thumb-${suffix}.png`,
-    `ignored-extra-thumb-${suffix}.png`
-  ]);
+  await pasteFixtureImage(page, '[data-testid="thumbnail-dropzone"]');
   await expect(page.getByText(/缩略图已生成 WebP/)).toBeVisible();
   await expect(page.locator('img[alt="商品缩略图"][src$="-thumb.webp"]').first()).toBeVisible();
   await expect(page.locator('input[name="mainImageUrl"]')).toHaveValue(/-thumb\.webp$/);
@@ -159,6 +189,10 @@ test("admin can create a category and product that storefront search can find", 
   await expect(page.locator('input[name="images"]')).toHaveValue(/\.webp\r?\n.*\.webp$/);
   await expect(page.getByText("详情图 1")).toBeVisible();
   await expect(page.getByText("详情图 2")).toBeVisible();
+  await pasteFixtureImage(page, '[data-testid="detail-dropzone"]');
+  await expect(page.getByText(/已上传 1 张详情图并转成 WebP/)).toBeVisible();
+  await expect(page.getByText("详情图 3")).toBeVisible();
+  await expect(page.getByText("详情图片数量：3")).toBeVisible();
   await page.getByLabel("商品名称").fill(productName);
   await page.getByLabel("所属分类").selectOption({ label: categoryName });
   await page.getByLabel("商品状态").selectOption("active");

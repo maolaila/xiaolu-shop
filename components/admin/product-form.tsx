@@ -1,6 +1,13 @@
 "use client";
 
-import { useActionState, useMemo, useState, type DragEvent } from "react";
+import {
+  useActionState,
+  useMemo,
+  useRef,
+  useState,
+  type ClipboardEvent as ReactClipboardEvent,
+  type DragEvent
+} from "react";
 import { ImagePlus, Save, Trash2, Upload } from "lucide-react";
 
 import { createProductAction, updateProductAction } from "@/app/admin/actions";
@@ -72,6 +79,8 @@ export function ProductForm({
   const [thumbnailDragActive, setThumbnailDragActive] = useState(false);
   const [detailDragActive, setDetailDragActive] = useState(false);
   const [uploadedThumbs, setUploadedThumbs] = useState<Record<string, string>>({});
+  const thumbnailPasteRef = useRef<HTMLDivElement>(null);
+  const detailPasteRef = useRef<HTMLDivElement>(null);
   const detailImagesValue = useMemo(() => detailImages.join("\n"), [detailImages]);
   const uploadDisabled = thumbnailUploading || detailUploading;
   const variantsJson = useMemo(
@@ -196,13 +205,28 @@ export function ProductForm({
     }
 
     const files = getImageFiles(event.dataTransfer.files);
+    uploadThumbnailFiles(files, "请拖入 jpg、png 或 webp 图片");
+  }
+
+  function uploadThumbnailFiles(files: File[], emptyMessage: string) {
     if (files.length === 0) {
-      setThumbnailUploadError("请拖入 jpg、png 或 webp 图片");
+      setThumbnailUploadError(emptyMessage);
       setThumbnailUploadInfo(null);
       return;
     }
 
     void uploadThumbnail(files[0], files.length > 1 ? "缩略图只能上传 1 张，已使用第一张图片" : undefined);
+  }
+
+  function handleThumbnailPaste(event: ReactClipboardEvent<HTMLElement> | globalThis.ClipboardEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    const files = event.clipboardData?.items ? getClipboardImageFiles(event.clipboardData.items) : [];
+    if (uploadDisabled) {
+      return;
+    }
+
+    uploadThumbnailFiles(files, "剪贴板里没有可上传的图片");
   }
 
   function handleDetailDrop(event: DragEvent<HTMLDivElement>) {
@@ -213,13 +237,28 @@ export function ProductForm({
     }
 
     const files = getImageFiles(event.dataTransfer.files);
+    uploadDetailImageFiles(files, "请拖入 jpg、png 或 webp 图片");
+  }
+
+  function uploadDetailImageFiles(files: File[], emptyMessage: string) {
     if (files.length === 0) {
-      setDetailUploadError("请拖入 jpg、png 或 webp 图片");
+      setDetailUploadError(emptyMessage);
       setDetailUploadInfo(null);
       return;
     }
 
     void uploadDetailImages(files);
+  }
+
+  function handleDetailPaste(event: ReactClipboardEvent<HTMLElement> | globalThis.ClipboardEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    const files = event.clipboardData?.items ? getClipboardImageFiles(event.clipboardData.items) : [];
+    if (uploadDisabled) {
+      return;
+    }
+
+    uploadDetailImageFiles(files, "剪贴板里没有可上传的图片");
   }
 
   function handleDragOver(event: DragEvent<HTMLDivElement>) {
@@ -320,9 +359,11 @@ export function ProductForm({
         {thumbnailUploadError ? <span className="text-xs font-normal text-red-600">{thumbnailUploadError}</span> : null}
         {thumbnailUploadInfo ? <span className="text-xs font-normal text-emerald-700">{thumbnailUploadInfo}</span> : null}
         <div
+          aria-label="粘贴或拖拽上传缩略图"
           aria-disabled={uploadDisabled}
           className={imageDropZoneClass(thumbnailDragActive, uploadDisabled)}
           data-testid="thumbnail-dropzone"
+          onClick={() => thumbnailPasteRef.current?.focus()}
           onDragEnter={(event) => {
             stopDragEvent(event);
             if (!uploadDisabled) {
@@ -335,7 +376,27 @@ export function ProductForm({
           }}
           onDragOver={handleDragOver}
           onDrop={handleThumbnailDrop}
+          onPaste={handleThumbnailPaste}
+          tabIndex={uploadDisabled ? -1 : 0}
         >
+          <div
+            aria-hidden="true"
+            className="absolute left-2 top-2 h-px w-px overflow-hidden opacity-0 outline-none"
+            contentEditable
+            data-paste-receiver
+            onInput={(event) => {
+              event.currentTarget.textContent = "";
+            }}
+            onPaste={handleThumbnailPaste}
+            ref={(element) => {
+              thumbnailPasteRef.current = element;
+              if (element) {
+                element.onpaste = handleThumbnailPaste;
+              }
+            }}
+            suppressContentEditableWarning
+            tabIndex={-1}
+          />
           {mainImageUrl ? (
             <div className="grid gap-3 sm:grid-cols-[160px_minmax(0,1fr)] sm:items-center">
               <div className="overflow-hidden rounded-md border border-line bg-white">
@@ -345,8 +406,8 @@ export function ProductForm({
               </div>
               <div className="grid gap-3">
                 <div>
-                  <p className="text-sm font-medium text-ink">拖拽图片到这里可替换缩略图</p>
-                  <p className="mt-1 text-xs text-muted">缩略图只保留 1 张，拖入多张时使用第一张。</p>
+                  <p className="text-sm font-medium text-ink">粘贴或拖拽图片到这里可替换缩略图</p>
+                  <p className="mt-1 text-xs text-muted">缩略图只保留 1 张，粘贴或拖入多张时使用第一张。</p>
                 </div>
                 <button className={`${imageDangerActionClass} w-fit`} onClick={() => setMainImageUrl("")} type="button">
                   <Trash2 className="h-3.5 w-3.5" />
@@ -358,8 +419,8 @@ export function ProductForm({
             <div className="grid min-h-28 place-items-center text-center">
               <div>
                 <Upload className="mx-auto h-7 w-7 text-muted" />
-                <p className="mt-2 text-sm font-medium text-ink">拖拽 1 张图片到这里</p>
-                <p className="mt-1 text-xs text-muted">也可以点击右上角上传缩略图</p>
+                <p className="mt-2 text-sm font-medium text-ink">点击这里后，可直接粘贴截图</p>
+                <p className="mt-1 text-xs text-muted">也可以拖拽 1 张图片，或点击右上角上传缩略图</p>
               </div>
             </div>
           )}
@@ -388,9 +449,11 @@ export function ProductForm({
         {detailUploadError ? <span className="text-xs font-normal text-red-600">{detailUploadError}</span> : null}
         {detailUploadInfo ? <span className="text-xs font-normal text-emerald-700">{detailUploadInfo}</span> : null}
         <div
+          aria-label="粘贴或拖拽上传详情图"
           aria-disabled={uploadDisabled}
           className={imageDropZoneClass(detailDragActive, uploadDisabled)}
           data-testid="detail-dropzone"
+          onClick={() => detailPasteRef.current?.focus()}
           onDragEnter={(event) => {
             stopDragEvent(event);
             if (!uploadDisabled) {
@@ -403,10 +466,30 @@ export function ProductForm({
           }}
           onDragOver={handleDragOver}
           onDrop={handleDetailDrop}
+          onPaste={handleDetailPaste}
+          tabIndex={uploadDisabled ? -1 : 0}
         >
+          <div
+            aria-hidden="true"
+            className="absolute left-2 top-2 h-px w-px overflow-hidden opacity-0 outline-none"
+            contentEditable
+            data-paste-receiver
+            onInput={(event) => {
+              event.currentTarget.textContent = "";
+            }}
+            onPaste={handleDetailPaste}
+            ref={(element) => {
+              detailPasteRef.current = element;
+              if (element) {
+                element.onpaste = handleDetailPaste;
+              }
+            }}
+            suppressContentEditableWarning
+            tabIndex={-1}
+          />
           {detailImages.length > 0 ? (
             <div className="grid gap-3">
-              <p className="text-xs text-muted">拖拽图片到这里可继续追加详情图</p>
+              <p className="text-xs text-muted">点击此区域后可直接粘贴截图；拖拽或粘贴图片会继续追加详情图</p>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
                 {detailImages.map((url, index) => {
                   const previewUrl = uploadedThumbs[url] ?? toGeneratedThumbnailUrl(url) ?? url;
@@ -452,8 +535,8 @@ export function ProductForm({
             <div className="grid min-h-28 place-items-center text-center">
               <div>
                 <ImagePlus className="mx-auto h-7 w-7 text-muted" />
-                <p className="mt-2 text-sm font-medium text-ink">拖拽多张图片到这里</p>
-                <p className="mt-1 text-xs text-muted">也可以点击右上角批量添加详情图</p>
+                <p className="mt-2 text-sm font-medium text-ink">点击这里后，可直接粘贴截图</p>
+                <p className="mt-1 text-xs text-muted">也可以拖拽多张图片，或点击右上角批量添加详情图</p>
               </div>
             </div>
           )}
@@ -480,9 +563,9 @@ export function ProductForm({
 
 function imageDropZoneClass(active: boolean, disabled: boolean) {
   return [
-    "rounded-md border border-dashed p-4 transition",
+    "relative rounded-md border border-dashed p-4 transition focus:outline-none focus:ring-2 focus:ring-teal-100",
     active ? "border-brand bg-teal-50" : "border-line bg-white",
-    disabled ? "opacity-60" : "hover:border-brand/60"
+    disabled ? "opacity-60" : "cursor-pointer hover:border-brand/60"
   ].join(" ");
 }
 
@@ -492,7 +575,17 @@ function stopDragEvent(event: DragEvent<HTMLElement>) {
 }
 
 function getImageFiles(files: FileList) {
-  return Array.from(files).filter((file) => supportedImageTypes.has(file.type));
+  return Array.from(files).filter(isSupportedImageFile);
+}
+
+function getClipboardImageFiles(items: DataTransferItemList) {
+  return Array.from(items)
+    .map((item) => (item.kind === "file" ? item.getAsFile() : null))
+    .filter(isSupportedImageFile);
+}
+
+function isSupportedImageFile(file: File | null): file is File {
+  return Boolean(file && supportedImageTypes.has(file.type));
 }
 
 function appendDetailImageUrls(images: string[], urls: string[]) {
