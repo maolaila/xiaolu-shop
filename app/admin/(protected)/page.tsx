@@ -2,15 +2,22 @@ import Link from "next/link";
 
 import { OrderStatusBadge, PaymentStatusBadge } from "@/components/ui/status";
 import { formatDateTime, formatMoney } from "@/lib/utils";
+import { getIncomeRecords } from "@/server/services/income";
 import { getDashboardStats } from "@/server/services/orders";
 import { getSiteSettings } from "@/server/services/settings";
 
 export default async function AdminDashboardPage() {
-  const [{ stats, recentOrders }, settings] = await Promise.all([getDashboardStats(), getSiteSettings()]);
+  const [{ stats, recentOrders }, settings, income] = await Promise.all([
+    getDashboardStats(),
+    getSiteSettings(),
+    getIncomeRecords()
+  ]);
   const cards = [
     ["今日订单", stats.todayOrders],
     ["待确认订单", stats.pendingOrders],
     ["待处理异常", stats.exceptionOrders],
+    ["账本收款", formatMoney(income.summary.receivedTotal)],
+    ["账本利润", formatMoney(income.summary.profitTotal)],
     ["上架商品", stats.activeProducts],
     ["售罄商品", stats.soldOutVariants],
     ["顾客总数", stats.customers]
@@ -22,7 +29,7 @@ export default async function AdminDashboardPage() {
         <h1 className="text-2xl font-semibold">数据概览</h1>
         <p className="mt-1 text-sm text-muted">后台核心运营指标和最近订单。</p>
       </div>
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-6">
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {cards.map(([label, value]) => (
           <div className="rounded-md border border-line bg-white p-4" key={label}>
             <div className="text-sm text-muted">{label}</div>

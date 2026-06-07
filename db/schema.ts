@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import {
   boolean,
+  date,
   integer,
   jsonb,
   numeric,
@@ -232,5 +233,23 @@ export const userAddresses = pgTable("user_addresses", {
 export const siteSettings = pgTable("site_settings", {
   key: text("key").primaryKey(),
   value: jsonb("value").notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow()
+});
+
+export const incomeRecords = pgTable("income_records", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  recordDate: date("record_date").notNull().default(sql`current_date`),
+  customerName: text("customer_name"),
+  contact: text("contact"),
+  paymentMethod: text("payment_method"),
+  productSummary: text("product_summary").notNull(),
+  saleAmount: numeric("sale_amount", { precision: 12, scale: 2 }),
+  receivedAmount: numeric("received_amount", { precision: 12, scale: 2 }),
+  purchaseNote: text("purchase_note"),
+  costNote: text("cost_note"),
+  costJpy: numeric("cost_jpy", { precision: 12, scale: 2 }),
+  costCny: numeric("cost_cny", { precision: 12, scale: 2 }),
+  profitAmount: numeric("profit_amount", { precision: 12, scale: 2 }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow()
 });

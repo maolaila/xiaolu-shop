@@ -70,6 +70,48 @@ test("admin can manage orders and customers", async ({ page }) => {
   await expect(page.getByText("customer").first()).toBeVisible();
 });
 
+test("admin can manage income ledger records", async ({ page }) => {
+  const suffix = Date.now();
+  const customerName = `收入测试客户 ${suffix}`;
+
+  await loginAdmin(page);
+
+  await page.getByRole("link", { name: "收入账本" }).click();
+  await expect(page.getByRole("heading", { name: "收入账本" })).toBeVisible();
+  await page.locator('a[href="/admin/income/new"]').first().click();
+  await expect(page.getByRole("heading", { name: "新增收入记录" })).toBeVisible();
+
+  await page.getByLabel("客户姓名").fill(customerName);
+  await page.getByLabel("电话/微信号").fill("wechat-income-test");
+  await page.getByLabel("支付方式").fill("微信200");
+  await page.getByLabel("商品").fill("久光贴10包，儿童无比滴1个");
+  await page.getByLabel("价格/应收").fill("200");
+  await page.getByLabel("收款/实收").fill("200");
+  await page.getByLabel("备注").fill("亚马逊购入");
+  await page.getByLabel("成本明细").fill("久光贴2400，无比滴650");
+  await page.getByLabel("日元成本/合计").fill("3050");
+  await page.getByLabel("人民币成本", { exact: true }).fill("80");
+  await page.getByRole("button", { name: "保存记录" }).click();
+
+  await expect(page).toHaveURL(/\/admin\/income$/);
+  const row = page.getByRole("row").filter({ hasText: customerName });
+  await expect(row).toBeVisible();
+  await expect(row.getByText("¥120.00")).toBeVisible();
+
+  await row.getByRole("link", { name: "编辑" }).click();
+  await expect(page.getByRole("heading", { name: "编辑收入记录" })).toBeVisible();
+  await page.getByLabel("利润").fill("118");
+  await page.getByRole("button", { name: "保存记录" }).click();
+  await expect(page.getByText("收入记录已保存")).toBeVisible();
+
+  await page.getByRole("link", { name: "返回账本" }).click();
+  await expect(page.getByRole("row").filter({ hasText: customerName }).getByText("¥118.00")).toBeVisible();
+  await page.getByRole("row").filter({ hasText: customerName }).getByRole("link", { name: "编辑" }).click();
+  await page.getByRole("button", { name: "删除记录" }).click();
+  await expect(page).toHaveURL(/\/admin\/income$/);
+  await expect(page.getByText(customerName)).toHaveCount(0);
+});
+
 test("admin can create a category and product that storefront search can find", async ({ page }) => {
   const suffix = Date.now();
   const thumbnailFile = test.info().outputPath(`product-thumb-${suffix}.png`);

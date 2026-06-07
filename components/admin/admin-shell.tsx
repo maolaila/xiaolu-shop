@@ -1,4 +1,4 @@
-import { Boxes, ClipboardList, Gauge, LogOut, Settings, Tags, Users } from "lucide-react";
+import { Banknote, Boxes, ClipboardList, Gauge, LogOut, Settings, Tags, Users } from "lucide-react";
 import Link from "next/link";
 
 import { logoutAction } from "@/app/actions/auth";
@@ -10,6 +10,7 @@ const links = [
   { href: "/admin/products", label: "商品管理", icon: Boxes },
   { href: "/admin/categories", label: "分类管理", icon: Tags },
   { href: "/admin/orders", label: "订单管理", icon: ClipboardList },
+  { href: "/admin/income", label: "收入账本", icon: Banknote },
   { href: "/admin/users", label: "顾客管理", icon: Users },
   { href: "/admin/settings", label: "站点配置", icon: Settings }
 ];

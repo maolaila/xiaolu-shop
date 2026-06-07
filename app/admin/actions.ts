@@ -23,6 +23,11 @@ import {
   updatePaymentStatus,
   updateShipping
 } from "@/server/services/orders";
+import {
+  createIncomeRecord,
+  deleteIncomeRecord,
+  updateIncomeRecord
+} from "@/server/services/income";
 import { updateSiteSettings } from "@/server/services/settings";
 import { resetCustomerPassword, setCustomerStatus } from "@/server/services/users";
 
@@ -46,6 +51,23 @@ function productInput(formData: FormData) {
     mainImageUrl: compactText(formData.get("mainImageUrl")),
     images: imagesRaw ? imagesRaw.split(/\r?\n/).map((item) => item.trim()).filter(Boolean) : [],
     variants: variantsRaw ? JSON.parse(variantsRaw) : []
+  };
+}
+
+function incomeRecordInput(formData: FormData) {
+  return {
+    recordDate: compactText(formData.get("recordDate")),
+    customerName: compactText(formData.get("customerName")),
+    contact: compactText(formData.get("contact")),
+    paymentMethod: compactText(formData.get("paymentMethod")),
+    productSummary: String(formData.get("productSummary") ?? ""),
+    saleAmount: compactText(formData.get("saleAmount")),
+    receivedAmount: compactText(formData.get("receivedAmount")),
+    purchaseNote: String(formData.get("purchaseNote") ?? ""),
+    costNote: String(formData.get("costNote") ?? ""),
+    costJpy: compactText(formData.get("costJpy")),
+    costCny: compactText(formData.get("costCny")),
+    profitAmount: compactText(formData.get("profitAmount"))
   };
 }
 
@@ -133,6 +155,46 @@ export async function deleteProductAction(formData: FormData) {
   await requireAdmin();
   await deleteProduct(compactText(formData.get("id")));
   revalidatePath("/admin/products");
+}
+
+export async function createIncomeRecordAction(
+  _prev: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  await requireAdmin();
+  try {
+    await createIncomeRecord(incomeRecordInput(formData));
+  } catch (error) {
+    return errorState(error);
+  }
+  revalidatePath("/admin");
+  revalidatePath("/admin/income");
+  redirect("/admin/income");
+}
+
+export async function updateIncomeRecordAction(
+  _prev: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  await requireAdmin();
+  const id = compactText(formData.get("id"));
+  try {
+    await updateIncomeRecord(id, incomeRecordInput(formData));
+  } catch (error) {
+    return errorState(error);
+  }
+  revalidatePath("/admin");
+  revalidatePath("/admin/income");
+  revalidatePath(`/admin/income/${id}`);
+  return { ok: true, message: "收入记录已保存" };
+}
+
+export async function deleteIncomeRecordAction(formData: FormData) {
+  await requireAdmin();
+  await deleteIncomeRecord(compactText(formData.get("id")));
+  revalidatePath("/admin");
+  revalidatePath("/admin/income");
+  redirect("/admin/income");
 }
 
 export async function updateOrderStatusAction(formData: FormData) {
